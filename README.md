@@ -17,7 +17,7 @@ El dataset generado es ideal para prácticas y demostraciones de **Ciencia de Da
 | `generator.ipynb` | **Notebook principal.** Contiene todo el código para la carga de datos, limpieza, proyección, configuración de parámetros y la generación del dataset sintético. |
 | `historial_salario_minimo.csv` | Datos históricos de la RMV en Perú (mensual). Fuente: BCR. |
 | `inflacion_Peru_BCR.csv` | Datos históricos de la Tasa de Inflación (IPC) anual. Fuente: BCR. |
-| `proyeccion_salario_minimo.csv` | Output del Paso 2. Proyección de la RMV hasta el año final de simulación (e.g., 2035). |
+| `proyeccion_salario_minimo.csv` | Output del Paso 1. Proyección de la RMV hasta el año final de simulación (e.g., 2035). |
 | `proyeccion_inflacion_BCR_lineal_v3.csv` | Output del Paso 2. Proyección de la Inflación anual. |
 | **`dataset_gastos_personales_simulado.csv`** | **Output final del proyecto.** Contiene todas las transacciones sintéticas generadas (fecha, monto, tipo, descripción, categoría) en el periodo simulado. |
 | `proyeccion_salario_minimo.png` | Gráfico de la proyección del Salario Mínimo. |
@@ -56,7 +56,7 @@ Se itera mes a mes a lo largo del periodo de simulación, utilizando la función
 
 ## 📈 Visualización de Resultados
 
-El proyecto genera dos visualizaciones clave:
+El proyecto genera tres visualizaciones clave:
 
 ### 1. Proyección del Salario Mínimo hasta el año 2035
 
