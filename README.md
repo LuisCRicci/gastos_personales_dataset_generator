@@ -51,6 +51,8 @@ Se itera mes a mes a lo largo del periodo de simulación, utilizando la función
     * **Mensual:** Vivienda, Servicios, Suscripciones.
     * **Esporádico:** Salud, Vestido, Ocio.
 * Se aplica una variación aleatoria controlada (`numpy.random.uniform`) al monto de cada transacción para aumentar el realismo.
+  
+
 
 ---
 
@@ -108,9 +110,183 @@ ANIO_FIN_SIMULACION = 2027 # Por ejemplo, un periodo futuro
 # Nota: La simulación se generará por cada mes dentro de este rango de años.
 
 # Parámetro 2: Configuración del Ingreso
-PORCENTAJE_INGRESO_EXTRA_PROMEDIO = 0.15 # 15% del Salario Mínimo en promedio por Horas Extra / Freelance
+PORCENTAJE_INGRESO_EXTRA_PROMEDIO = 0.50 # 50% del Salario Mínimo en promedio por Horas Extra / Freelance
 DIAS_PAGO_SALARIO = 30 # Día del mes en que se recibe el salario (ej. el día 30)
 ```
 
 
 ![alt text](image.png)
+
+
+## ⚙️ Obciones de Mejora y Personalización
+
+#### * Personalizar scrapin_precios_candymarket.ipynb
+ puedes modificar el notebook ***scrapin_precios_candymarket.ipynb*** para extraer los productos y precios de otra fuente y adptarlos dentro de del notebook ***generator.ipynb*** en estas secciones de codigo: 
+
+```python
+# ==========================================================
+# 3.2.1 Mapeo de Archivos CSV de Productos a Categorías
+# ==========================================================
+PRODUCTOS_CSV_MAP = {
+    'Alimentacion (Hogar)': [
+        "productos/abarrotes.csv",
+        "productos/carnes_aderezadas_y_especerias.csv",
+        "productos/carnes.csv",
+        "productos/embutidos.csv",
+        "productos/frutas_y_verduras.csv",
+        "productos/lacteos_y_huevos.csv",
+        # 'panaderia_y_pasteleria.csv' se omite ya que tiene un TRATAMIENTO ESPECIAL (compra diaria, monto fijo)
+    ],
+    'Salud': ["productos/farmacia.csv"],
+    'Mobiliario y Enseres': [
+        "productos/ferreteria.csv",
+        "productos/limpieza.csv",
+        "productos/menaje.csv",
+        "productos/tocador_y_aseo_personal.csv"
+    ],
+    'Otros Gastos y Diversos': [
+        "productos/golosinas.csv",
+        "productos/jugos_y_nectares.csv"
+    ],
+    'Alimentacion (Fuera)': ["productos/patio_de_comidas.csv"]
+}
+
+......
+
+# --- Inicio del PASO 3: Generación del Dataset Sintético de Transacciones ---
+
+# ==========================================================
+# 1. Preparación de Data de Alimentación (Hogar)
+# ==========================================================
+
+print("Cargando data de productos de hogar...")
+
+# 💡 NOTA: Asegúrate de que los archivos 'abarrotes.csv', 'carnes.csv',
+# y 'frutas_y_verduras.csv' estén en el mismo directorio.
+
+df_abarrotes = pd.read_csv('productos/abarrotes.csv')
+df_carnes = pd.read_csv('productos/carnes.csv')
+df_frutas_y_verduras = pd.read_csv('productos/frutas_y_verduras.csv')
+
+
+# Unir y limpiar los productos relevantes para Alimentación (Hogar)
+productos_alimentacion_hogar = pd.concat([df_abarrotes, df_carnes, df_frutas_y_verduras], ignore_index=True)
+productos_alimentacion_hogar = productos_alimentacion_hogar[['nombre_producto', 'unidad_medida', 'precio_por_unidad']].drop_duplicates()
+# Eliminar productos no aptos para compra diaria (ej. sacos grandes de 10kg, etc.)
+productos_alimentacion_hogar = productos_alimentacion_hogar[
+    ~productos_alimentacion_hogar['nombre_producto'].str.contains('10 KILOS|10KG|Detergente', case=False, na=False)
+].reset_index(drop=True)
+
+# Lista para almacenar los nuevos gastos de hogar generados
+nuevos_gastos_hogar = []
+
+print(f"Productos listos para simulación: {len(productos_alimentacion_hogar)}")
+
+...
+
+# ==============================================================================
+# PASO 3.5: Preparación y Consolidación de Data de Productos (CSV)
+# ==============================================================================
+print("Cargando y pre-procesando data de productos de hogar...")
+
+try:
+    # 1. Cargar archivos de productos
+    df_abarrotes = pd.read_csv('productos/abarrotes.csv')
+    df_carnes = pd.read_csv('productos/carnes.csv')
+    df_frutas_y_verduras = pd.read_csv('productos/frutas_y_verduras.csv')
+    
+    # 2. Consolidar productos de Alimentación (Hogar)
+    productos_hogar_raw = pd.concat([df_abarrotes, df_carnes, df_frutas_y_verduras], ignore_index=True)
+
+    # 3. RENOMBRAR las columnas para hacerlas consistentes
+    productos_hogar_clean = productos_hogar_raw.rename(columns={
+        'nombre_producto': 'descripcion_producto',
+        'precio_por_unidad': 'precio_unitario'
+    })
+
+    # 4. Filtrar y seleccionar las columnas finales, asegurando 'unidad_medida'
+    productos_hogar_clean = productos_hogar_clean[[
+        'descripcion_producto', 
+        'unidad_medida', 
+        'precio_unitario'
+    ]].drop_duplicates().reset_index(drop=True)
+
+    # 5. Crear el diccionario PRODUCTOS_DF (Asumiendo que 'Alimentacion (Hogar)' es la clave)
+    # 💡 Nota: Si tienes más categorías (ej. 'Salud'), debes añadirlas aquí también con la misma estructura.
+    PRODUCTOS_DF['Alimentacion (Hogar)'] = productos_hogar_clean
+    
+    print(f"✅ Se consolidaron {len(productos_hogar_clean)} productos para Alimentación (Hogar). Columnas estandarizadas.")
+    
+except Exception as e:
+    print(f"❌ Error al pre-procesar los CSVs. Asegúrate de que los archivos estén en el directorio y las columnas sean correctas: {e}")
+
+
+```
+
+#### * Personalizar el porcentaje de distribucion de gasto
+
+ puedes modificar el notebook ***generator.ipynb***  para refeljar la distribucion de gasto de tu localidad modificando las asignaciones decimales dentro de cada categoria, en el caso actual se usa el 99 % del ingreso para solventar los gastos dejando un 1% para ahorro.
+
+```python
+
+ESTRUCTURA_GASTO = {
+    'Alimentacion (Hogar)': {
+        'porcentaje': 0.36, 
+        'periodicidad': 'Diario', 
+        'keywords': ["supermercado", "market", "metro", "wong", "tottus", "plaza vea", "mass", "bodega", "mercado", "panaderia", "leche", "frutas", "verduras", "carniceria", "pollo", "carne", "arroz", "aceite"]
+    },
+    'Vivienda y Servicios': {
+        'porcentaje': 0.25, 
+        'periodicidad': 'Mensual', 
+        'keywords': ["alquiler", "renta", "luz del sur", "enel", "sedapal", "gas natural", "internet y telefono", "claro", "movistar", "entel", "mantenimiento", "Xturbo"]
+    },
+    'Transporte y Comunicaciones': {
+        'porcentaje': 0.15, 
+        'periodicidad': 'Diario', 
+        'keywords': ["gasolina", "grifo Repsol", "estacionamiento", "bus", "Metropolitano", "urbano" ]
+    },
+    'Alimentacion (Fuera)': {
+        'porcentaje': 0.08, 
+        'periodicidad': 'Semanal', 
+        'keywords': ["almuerzo restaurant", "comida rapida", "menu", "cafe", "starbucks", "bembos", "pollo a la brasa", "chifa", "picanteria", "anticuchos"]
+    },
+    'Vestido y Calzado': {
+        'porcentaje': 0.05, 
+        'periodicidad': 'Esporádico', 
+        'keywords': ["ropa", "zapatos", "tienda", "saga", "ripley", "falabella", "oechsle", "cosmetico", "perfume", "accesorio" , "maquillaje"]
+    },
+    'Salud': {
+        'porcentaje': 0.02, 
+        'periodicidad': 'Variable', 
+        'keywords': ["farmacia Inkafarma", "farmacia Mifarma", "medicina", "consulta medica", "vitaminas", "analisis laboratorio"]
+    },
+    'Educacion y Ocio': {
+        'porcentaje': 0.03, 
+        'periodicidad': 'Mensual', 
+        'keywords': ["netflix", "spotify", "hbo", "cine", "concierto", "curso online", "libro", "gimnasio", "suscripcion"]
+    },
+    'Mobiliario y Enseres': {
+        'porcentaje': 0.02, 
+        'periodicidad': 'Mensual', 
+        'keywords': ["articulos de limpieza", "ferreteria", "reparacion", "mueble", "decoracion"]
+    },
+    'Otros Gastos y Diversos': {
+        'porcentaje': 0.03, 
+        'periodicidad': 'Variable', 
+        'keywords': ["regalo", "donacion", "cuidado personal", "peluqueria", "barberia", "transferencia a familiar"]
+    }
+}
+
+```
+Ademas tambien puedes modificar las proyecciones de Inflación y  Remuneracion Mínima Vital (RMV) ingresando los datos de tu localidad en los CSVs ***historial_salario_minimo.csv***, ***inflacion_Peru_BCR*** 
+
+
+
+
+
+
+## 📎 Notas Finales
+
+Se recomienda ejecutar el notebook de principio a fin para garantizar coherencia en las proyecciones.
+
+Proyecto orientado a análisis financiero sintético y educación en ciencia de datos.
